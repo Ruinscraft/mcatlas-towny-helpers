@@ -1,4 +1,4 @@
-package net.mcatlas.townyhelpers;
+package net.mcatlas.towny.helpers;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
