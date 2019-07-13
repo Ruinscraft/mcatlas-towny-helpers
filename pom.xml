@@ -11,7 +11,7 @@
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<mainClass>net.mcatlas.townyhelpers.TownyHelpersPlugin</mainClass>
+		<mainClass>net.mcatlas.towny.helpers.TownyHelpersPlugin</mainClass>
 		<jar.finalName>${project.name}</jar.finalName>
 	</properties>
 
