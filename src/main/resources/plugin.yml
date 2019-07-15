@@ -1,6 +1,5 @@
 main: ${mainClass}
 name: ${name}
 version: ${version}
-authors: [StupidDrew9]
+authors: [StupidDrew9, royalkingkb]
 api-version: 1.13
-commands:

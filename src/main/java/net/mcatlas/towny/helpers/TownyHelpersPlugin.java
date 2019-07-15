@@ -4,21 +4,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class TownyHelpersPlugin extends JavaPlugin {
 
-	private static TownyHelpersPlugin townyHelpers;
+    @Override
+    public void onEnable() {
+        instance = this;
 
-	public static TownyHelpersPlugin getTownyHelpers() {
-		return townyHelpers;
-	}
+        getServer().getPluginManager().registerEvents(new TownyListener(), this);
+    }
 
-	@Override
-	public void onEnable() {
-		townyHelpers = this;
+    public void onDisable() {
+        instance = null;
+    }
 
-		getServer().getPluginManager().registerEvents(new TownyListener(), this);
-	}
+    private static TownyHelpersPlugin instance;
 
-	public void onDisable() {
-		townyHelpers = null;
-	}
+    public static TownyHelpersPlugin get() {
+        return instance;
+    }
 
 }
