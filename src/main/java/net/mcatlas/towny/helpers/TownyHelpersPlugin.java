@@ -9,6 +9,7 @@ public class TownyHelpersPlugin extends JavaPlugin {
         instance = this;
 
         getServer().getPluginManager().registerEvents(new TownyListener(), this);
+        getServer().getPluginManager().registerEvents(new BlockListener(), this);
     }
 
     public void onDisable() {
