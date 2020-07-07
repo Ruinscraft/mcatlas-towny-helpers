@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,8 +13,9 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.TownyUniverse;
@@ -24,7 +26,8 @@ public class BlockListener implements Listener {
 
 	private Set<UUID> recents = new HashSet<>();
 
-	public void onBlockPlace(BlockPlaceEvent event) {
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent event) {
 		Location location = event.getBlock().getLocation();
 		TownBlock townBlock = TownyUniverse.getTownBlock(location);
 		if (townBlock != null && townBlock.hasTown()) return;
@@ -36,11 +39,12 @@ public class BlockListener implements Listener {
 			if (player.getGameMode() != GameMode.SURVIVAL) return; 
 			if (!recents.contains(player.getUniqueId())) {
 				player.sendMessage("");
-				player.sendMessage(ChatColor.RED + 
+				player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD +
 						"** Reminder: Destroying public paths / railways is not allowed and is punishable. **");
 				player.sendMessage("");
 
-				block.getWorld().spawnParticle(Particle.REDSTONE, block.getLocation(), 1);
+				block.getWorld().spawnParticle(Particle.REDSTONE, block.getLocation().clone().add(.5, 0, .5), 1, 
+						new Particle.DustOptions(Color.RED, 10));
 				block.getWorld().playSound(block.getLocation(), Sound.BLOCK_REDSTONE_TORCH_BURNOUT, 5, 1);
 				event.setCancelled(true);
 
