@@ -68,6 +68,10 @@ public class TownyListener implements Listener {
 
     @EventHandler
     public void onTownySpawn(SpawnEvent event) {
+        if (event.getPlayer().hasPermission("mcatlas.townyhelpers.spawnfromanywhere")) {
+            return;
+        }
+
         if (event.getFrom().getWorld().getEnvironment() != World.Environment.NORMAL) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(ChatColor.RED + "You must use a portal to return to the Earth world.");
