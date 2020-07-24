@@ -1,14 +1,12 @@
 package net.mcatlas.towny.helpers;
 
-import com.palmergames.bukkit.towny.event.NationAddTownEvent;
-import com.palmergames.bukkit.towny.event.NewNationEvent;
-import com.palmergames.bukkit.towny.event.NewTownEvent;
-import com.palmergames.bukkit.towny.event.TownAddResidentEvent;
+import com.palmergames.bukkit.towny.event.*;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -65,6 +63,14 @@ public class TownyListener implements Listener {
                     resident.removeNationRank(rank);
                 } catch (NotRegisteredException e) { }
             }
+        }
+    }
+
+    @EventHandler
+    public void onTownySpawn(SpawnEvent event) {
+        if (event.getFrom().getWorld().getEnvironment() != World.Environment.NORMAL) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "You must use a portal to return to the Earth world.");
         }
     }
 

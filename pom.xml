@@ -23,8 +23,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
+            <groupId>org.bukkit</groupId>
+            <artifactId>bukkit</artifactId>
             <version>1.13.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
@@ -33,31 +33,11 @@
             <artifactId>Towny</artifactId>
             <version>unknown</version>
             <scope>system</scope>
-            <systemPath>${basedir}/src/main/resources/Towny.jar</systemPath>
+            <systemPath>${basedir}/lib/Towny-0.96.2.0-for-1.13.2.jar</systemPath>
         </dependency>
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <minimizeJar>true</minimizeJar>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <defaultGoal>package</defaultGoal>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
