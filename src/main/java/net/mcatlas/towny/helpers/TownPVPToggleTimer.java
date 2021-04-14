@@ -76,58 +76,63 @@ public class TownPVPToggleTimer implements Listener {
         if (recentToggles.containsKey(town)) {
             event.setCancelled(true);
             event.setCancellationMsg("Wait to use this again.");
-            long lastToggle = recentToggles.get(town);
-            int secondsSinceLastToggle = (int) ((System.currentTimeMillis() - lastToggle) / 1000);
-            if (secondsSinceLastToggle > PVP_TIMER_LENGTH_SECONDS) {
-                // Let the event go through, it's time
-                event.setCancelled(false);
-                // Remove town from recent
-                recentToggles.remove(town);
-            }
             return;
         }
 
-        // If pvp will be enabled
-        if (event.getFutureState()) {
-            event.setCancelled(true);
-            event.setCancellationMsg("PVP will be enabled after the countdown.");
-            final long toggledAt = System.currentTimeMillis();
-            // Add to recent toggles
-            recentToggles.put(town, toggledAt);
-            // Every 1s, alert players that pvp will be enabled soon
-            // After 15s, enable pvp
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (town == null || !town.hasMayor()) {
-                        // Deleted town or something?
-                        cancel();
-                        return;
+        final long toggledAt = System.currentTimeMillis();
+        final boolean newPVPState = event.getFutureState();
+        String newPVPStateString = newPVPState ? "enabled" : "disabled";
+
+        recentToggles.put(town, toggledAt);
+
+        // Cancel the event
+        event.setCancelled(true);
+        event.setCancellationMsg("PVP will be " + newPVPStateString + " after the countdown.");
+
+        BukkitRunnable pvpTimerRunnable = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (town == null || !town.hasMayor()) {
+                    // Deleted town or something?
+                    cancel();
+                    recentToggles.remove(town);
+                    return;
+                }
+
+                if (!recentToggles.containsKey(town)) {
+                    cancel();
+                    return;
+                }
+
+                long secondsSinceToggle = (System.currentTimeMillis() - toggledAt) / 1000;
+                Set<Player> playersInTown = getPlayersCurrentlyInTown(town);
+
+                if (secondsSinceToggle > PVP_TIMER_LENGTH_SECONDS) {
+                    // Update town pvp status and save
+                    town.setPVP(newPVPState);
+                    saveTownPVPSetting(town);
+                    // Cancel timer task
+                    cancel();
+                    // Remove town from recent toggles
+                    recentToggles.remove(town);
+                    // Alert players
+                    List<String> playerNamesInTown = new ArrayList<>();
+                    for (Player player : playersInTown) {
+                        playerNamesInTown.add(player.getName());
+                        player.sendTitle(ChatColor.YELLOW + "PVP is now " + newPVPStateString + "!", "", 0, 20 * 5, 0);
                     }
-
-                    long secondsSinceToggle = (System.currentTimeMillis() - toggledAt) / 1000;
-
-                    Set<Player> playersInTown = getPlayersCurrentlyInTown(town);
-
-                    if (secondsSinceToggle > PVP_TIMER_LENGTH_SECONDS) {
-                        town.setPVP(true);
-                        saveTownPVPSetting(town);
-                        cancel();
-                        List<String> playerNamesInTown = new ArrayList<>();
-                        for (Player player : playersInTown) {
-                            playerNamesInTown.add(player.getName());
-                            player.sendTitle(ChatColor.YELLOW + "PVP is now enabled!", "", 0, 20 * 5, 0);
-                        }
-                        // Log players currently in the town
-                        TownyHelpersPlugin.get().getLogger().info(town.getName() + " has enabled PVP. Players in town [" + String.join(", ", playerNamesInTown) + "]");
-                    } else {
-                        for (Player player : playersInTown) {
-                            player.sendTitle(ChatColor.YELLOW + "PVP in " + (PVP_TIMER_LENGTH_SECONDS - secondsSinceToggle) + " seconds!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
-                        }
+                    // Log players currently in the town
+                    TownyHelpersPlugin.get().getLogger().info(town.getName() + " has " + newPVPStateString + " PVP. Players in town [" + String.join(", ", playerNamesInTown) + "]");
+                } else {
+                    for (Player player : playersInTown) {
+                        player.sendTitle(ChatColor.YELLOW + "PVP " + newPVPStateString + " in " + (PVP_TIMER_LENGTH_SECONDS - secondsSinceToggle) + "s!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
                     }
                 }
-            }.runTaskTimer(TownyHelpersPlugin.get(), 0L, 20L);
-        }
+            }
+        };
+
+        // Run the pvp timer every second
+        pvpTimerRunnable.runTaskTimer(TownyHelpersPlugin.get(), 0L, 20L);
     }
 
     // From https://github.com/TownyAdvanced/Towny/blob/8f7f75f2904891ed4071279132d1500d4bb459aa/src/com/palmergames/bukkit/towny/command/TownCommand.java#L1605
