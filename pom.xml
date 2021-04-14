@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.mcatlas</groupId>
-    <artifactId>towny-helpers</artifactId>
+    <artifactId>mcatlas-towny-helpers</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <name>mcatlas-towny-helpers</name>
@@ -23,9 +23,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.13.2-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -33,7 +33,7 @@
             <artifactId>Towny</artifactId>
             <version>unknown</version>
             <scope>system</scope>
-            <systemPath>${basedir}/lib/Towny-0.96.2.0-for-1.13.2.jar</systemPath>
+            <systemPath>${basedir}/lib/Towny-0.96.7.0.jar</systemPath>
         </dependency>
     </dependencies>
 

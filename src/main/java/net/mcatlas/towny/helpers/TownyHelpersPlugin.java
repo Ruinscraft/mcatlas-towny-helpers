@@ -10,6 +10,7 @@ public class TownyHelpersPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new TownyListener(), this);
         getServer().getPluginManager().registerEvents(new BlockListener(), this);
+        getServer().getPluginManager().registerEvents(new ExploitFixes(), this);
     }
 
     public void onDisable() {
