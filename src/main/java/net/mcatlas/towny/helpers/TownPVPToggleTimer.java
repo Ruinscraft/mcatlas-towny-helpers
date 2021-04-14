@@ -1,0 +1,119 @@
+package net.mcatlas.towny.helpers;
+
+import com.palmergames.bukkit.towny.event.TownBlockSettingsChangedEvent;
+import com.palmergames.bukkit.towny.event.town.toggle.TownTogglePVPEvent;
+import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.object.TownBlock;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class TownPVPToggleTimer implements Listener {
+
+    private Map<Town, Long> recentToggles;
+
+    public TownPVPToggleTimer() {
+        recentToggles = new ConcurrentHashMap<>();
+    }
+
+    @EventHandler
+    public void onTownTogglePVP(TownTogglePVPEvent event) {
+        final Town town = event.getTown();
+
+        // Town recently toggled pvp
+        if (recentToggles.containsKey(town)) {
+            event.setCancelled(true);
+            event.setCancellationMsg("Wait to use this again.");
+            long lastToggle = recentToggles.get(town);
+            int secondsSinceLastToggle = (int) ((System.currentTimeMillis() - lastToggle) / 1000);
+            if (secondsSinceLastToggle > 15) {
+                // Let the event go through, it's time
+                event.setCancelled(false);
+                // Remove town from recent
+                recentToggles.remove(town);
+            }
+            return;
+        }
+
+        // If pvp will be enabled
+        if (event.getFutureState()) {
+            event.setCancelled(true);
+            event.setCancellationMsg("PVP will be enabled after the countdown.");
+            final long toggledAt = System.currentTimeMillis();
+            // Add to recent toggles
+            recentToggles.put(town, toggledAt);
+            // Every 1s, alert players that pvp will be enabled soon
+            // After 15s, enable pvp
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (town == null || !town.hasMayor()) {
+                        // Deleted town or something?
+                        cancel();
+                        return;
+                    }
+
+                    long secondsSinceToggle = (System.currentTimeMillis() - toggledAt) / 1000;
+
+                    Set<Player> playersInTown = getPlayersCurrentlyInTown(town);
+
+                    if (secondsSinceToggle > 15) {
+                        town.setPVP(true);
+                        saveTownPVPSetting(town);
+                        cancel();
+                        List<String> playerNamesInTown = new ArrayList<>();
+                        for (Player player : playersInTown) {
+                            playerNamesInTown.add(player.getName());
+                            player.sendTitle(ChatColor.YELLOW + "PVP is now enabled!", "", 0, 20 * 5, 0);
+                        }
+                        // Log players currently in the town
+                        TownyHelpersPlugin.get().getLogger().info(town.getName() + " has enabled PVP. Players in town [" + String.join(", ", playerNamesInTown) + "]");
+                    } else {
+                        for (Player player : playersInTown) {
+                            player.sendTitle(ChatColor.YELLOW + "PVP in " + (15 - secondsSinceToggle) + " seconds!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
+                        }
+                    }
+                }
+            }.runTaskTimer(TownyHelpersPlugin.get(), 0L, 20L);
+        }
+    }
+
+    // From https://github.com/TownyAdvanced/Towny/blob/8f7f75f2904891ed4071279132d1500d4bb459aa/src/com/palmergames/bukkit/towny/command/TownCommand.java#L1605
+    private static void saveTownPVPSetting(Town town) {
+        for (TownBlock townBlock : town.getTownBlocks()) {
+            if (!townBlock.hasResident() && !townBlock.isChanged()) {
+                townBlock.setType(townBlock.getType());
+                townBlock.save();
+            }
+        }
+        //Change settings event
+        Bukkit.getServer().getPluginManager().callEvent(new TownBlockSettingsChangedEvent(town));
+        // Save the Town.
+        town.save();
+    }
+
+    private static Set<Player> getPlayersCurrentlyInTown(Town town) {
+        Set<Player> players = new HashSet<>();
+        // maybe not the most efficient way to calculate this but itll work
+        for (TownBlock townBlock : town.getTownBlocks()) {
+            Chunk chunk = town.getWorld().getChunkAt(townBlock.getX(), townBlock.getZ());
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.getWorld().equals(town.getWorld())) {
+                    continue;
+                }
+                if (player.getLocation().getChunk().equals(chunk)) {
+                    players.add(player);
+                }
+            }
+        }
+        return players;
+    }
+
+}
