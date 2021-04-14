@@ -18,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TownPVPToggleTimer implements Listener {
 
+    private static final int PVP_TIMER_LENGTH_SECONDS = 20;
+
     private Map<Player, Town> teleportConfirms;
     private Map<Town, Long> recentToggles;
 
@@ -76,7 +78,7 @@ public class TownPVPToggleTimer implements Listener {
             event.setCancellationMsg("Wait to use this again.");
             long lastToggle = recentToggles.get(town);
             int secondsSinceLastToggle = (int) ((System.currentTimeMillis() - lastToggle) / 1000);
-            if (secondsSinceLastToggle > 15) {
+            if (secondsSinceLastToggle > PVP_TIMER_LENGTH_SECONDS) {
                 // Let the event go through, it's time
                 event.setCancelled(false);
                 // Remove town from recent
@@ -107,7 +109,7 @@ public class TownPVPToggleTimer implements Listener {
 
                     Set<Player> playersInTown = getPlayersCurrentlyInTown(town);
 
-                    if (secondsSinceToggle > 15) {
+                    if (secondsSinceToggle > PVP_TIMER_LENGTH_SECONDS) {
                         town.setPVP(true);
                         saveTownPVPSetting(town);
                         cancel();
@@ -120,7 +122,7 @@ public class TownPVPToggleTimer implements Listener {
                         TownyHelpersPlugin.get().getLogger().info(town.getName() + " has enabled PVP. Players in town [" + String.join(", ", playerNamesInTown) + "]");
                     } else {
                         for (Player player : playersInTown) {
-                            player.sendTitle(ChatColor.YELLOW + "PVP in " + (15 - secondsSinceToggle) + " seconds!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
+                            player.sendTitle(ChatColor.YELLOW + "PVP in " + (PVP_TIMER_LENGTH_SECONDS - secondsSinceToggle) + " seconds!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
                         }
                     }
                 }
