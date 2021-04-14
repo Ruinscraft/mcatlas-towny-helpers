@@ -1,6 +1,7 @@
 package net.mcatlas.towny.helpers;
 
 import com.palmergames.bukkit.towny.event.TownBlockSettingsChangedEvent;
+import com.palmergames.bukkit.towny.event.TownSpawnEvent;
 import com.palmergames.bukkit.towny.event.town.toggle.TownTogglePVPEvent;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
@@ -17,10 +18,52 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TownPVPToggleTimer implements Listener {
 
+    private Map<Player, Town> teleportConfirms;
     private Map<Town, Long> recentToggles;
 
     public TownPVPToggleTimer() {
+        teleportConfirms = new ConcurrentHashMap<>();
         recentToggles = new ConcurrentHashMap<>();
+    }
+
+    @EventHandler
+    public void onTeleportWarnIfAboutToEnterPVPZone(TownSpawnEvent event) {
+        final Town town = event.getToTown();
+        final Player player = event.getPlayer();
+
+        // Residents don't have to confirm a teleport
+        if (town.hasResident(player.getName())) {
+            return;
+        }
+
+        // Player has confirmed a teleport
+        if (teleportConfirms.containsKey(player)) {
+            Town confirmTown = teleportConfirms.get(player);
+            if (confirmTown.equals(town)) {
+                teleportConfirms.remove(player);
+            }
+            return;
+        }
+
+        boolean aboutToEnablePVP = recentToggles.containsKey(town);
+
+        if (aboutToEnablePVP) {
+            event.setCancelled(true);
+            event.setCancelMessage("The town you tried to teleport to is about to enable PVP. Run this command again if you're sure you want to teleport.");
+        }
+
+        if (town.isPVP()) {
+            event.setCancelled(true);
+            event.setCancelMessage("The town you tried to teleport to has PVP enabled. Run this command again if you're sure you want to teleport.");
+        }
+
+        if (event.isCancelled()) {
+            teleportConfirms.put(player, town);
+            // Remove from confirms after 30s
+            TownyHelpersPlugin.get().getServer().getScheduler().runTaskLater(TownyHelpersPlugin.get(), () -> {
+                teleportConfirms.remove(player);
+            }, 30 * 20L);
+        }
     }
 
     @EventHandler
