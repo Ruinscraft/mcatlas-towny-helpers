@@ -69,6 +69,41 @@ public class TownPVPToggleTimer implements Listener {
     }
 
     @EventHandler
+    public void onTeleportWarnIfOutlawed(TownSpawnEvent event) {
+        final Town town = event.getToTown();
+        final Player player = event.getPlayer();
+
+        // Residents don't have to confirm a teleport
+        if (town.hasResident(player.getName())) {
+            return;
+        }
+
+        // Player has confirmed a teleport
+        if (teleportConfirms.containsKey(player)) {
+            Town confirmTown = teleportConfirms.get(player);
+            if (confirmTown.equals(town)) {
+                teleportConfirms.remove(player);
+            }
+            return;
+        }
+
+        boolean outlawed = town.hasOutlaw(player.getName());
+
+        if (outlawed) {
+            event.setCancelled(true);
+            event.setCancelMessage("You are outlawed in this town. You cannot teleport out of the Town once you teleport in. Run this command again if you're sure you want to teleport.");
+        }
+
+        if (event.isCancelled()) {
+            teleportConfirms.put(player, town);
+            // Remove from confirms after 30s
+            TownyHelpersPlugin.get().getServer().getScheduler().runTaskLater(TownyHelpersPlugin.get(), () -> {
+                teleportConfirms.remove(player);
+            }, 30 * 20L);
+        }
+    }
+
+    @EventHandler
     public void onTownTogglePVP(TownTogglePVPEvent event) {
         final Town town = event.getTown();
 
