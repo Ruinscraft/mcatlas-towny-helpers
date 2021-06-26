@@ -4,3 +4,5 @@ version: ${version}
 authors: [StupidDrew9, royalkingkb]
 depend: [Towny]
 api-version: 1.13
+commands:
+  rename:

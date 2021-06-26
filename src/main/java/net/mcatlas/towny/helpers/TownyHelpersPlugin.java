@@ -12,6 +12,8 @@ public class TownyHelpersPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BlockListener(), this);
         getServer().getPluginManager().registerEvents(new ExploitFixes(), this);
         getServer().getPluginManager().registerEvents(new TownPVPToggleTimer(), this);
+
+        getCommand("rename").setExecutor(new RenameCommand());
     }
 
     public void onDisable() {
