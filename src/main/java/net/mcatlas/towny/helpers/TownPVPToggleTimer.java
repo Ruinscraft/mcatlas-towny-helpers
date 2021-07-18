@@ -20,11 +20,13 @@ public class TownPVPToggleTimer implements Listener {
 
     private static final int PVP_TIMER_LENGTH_SECONDS = 20;
 
-    private Map<Player, Town> teleportConfirms;
+    private Map<Player, Town> pvpTeleportConfirms;
+    private Map<Player, Town> outlawTeleportConfirms;
     private Map<Town, Long> recentToggles;
 
     public TownPVPToggleTimer() {
-        teleportConfirms = new ConcurrentHashMap<>();
+        pvpTeleportConfirms = new ConcurrentHashMap<>();
+        outlawTeleportConfirms = new ConcurrentHashMap<>();
         recentToggles = new ConcurrentHashMap<>();
     }
 
@@ -39,10 +41,10 @@ public class TownPVPToggleTimer implements Listener {
         }
 
         // Player has confirmed a teleport
-        if (teleportConfirms.containsKey(player)) {
-            Town confirmTown = teleportConfirms.get(player);
+        if (pvpTeleportConfirms.containsKey(player)) {
+            Town confirmTown = pvpTeleportConfirms.get(player);
             if (confirmTown.equals(town)) {
-                teleportConfirms.remove(player);
+                pvpTeleportConfirms.remove(player);
             }
             return;
         }
@@ -60,10 +62,10 @@ public class TownPVPToggleTimer implements Listener {
         }
 
         if (event.isCancelled()) {
-            teleportConfirms.put(player, town);
+            pvpTeleportConfirms.put(player, town);
             // Remove from confirms after 30s
             TownyHelpersPlugin.get().getServer().getScheduler().runTaskLater(TownyHelpersPlugin.get(), () -> {
-                teleportConfirms.remove(player);
+                pvpTeleportConfirms.remove(player);
             }, 30 * 20L);
         }
     }
@@ -79,26 +81,25 @@ public class TownPVPToggleTimer implements Listener {
         }
 
         // Player has confirmed a teleport
-        if (teleportConfirms.containsKey(player)) {
-            Town confirmTown = teleportConfirms.get(player);
+        if (outlawTeleportConfirms.containsKey(player)) {
+            Town confirmTown = outlawTeleportConfirms.get(player);
             if (confirmTown.equals(town)) {
-                teleportConfirms.remove(player);
+                outlawTeleportConfirms.remove(player);
             }
             return;
         }
 
         boolean outlawed = town.hasOutlaw(player.getName());
+        if (!outlawed) return;
 
-        if (outlawed) {
-            event.setCancelled(true);
-            event.setCancelMessage("You are outlawed in this town. You cannot teleport out of the Town once you teleport in. Run this command again if you're sure you want to teleport.");
-        }
+        event.setCancelled(true);
+        event.setCancelMessage("You are outlawed in this town. You cannot teleport out of the Town once you teleport in. Run this command again if you're sure you want to teleport.");
 
         if (event.isCancelled()) {
-            teleportConfirms.put(player, town);
+            outlawTeleportConfirms.put(player, town);
             // Remove from confirms after 30s
             TownyHelpersPlugin.get().getServer().getScheduler().runTaskLater(TownyHelpersPlugin.get(), () -> {
-                teleportConfirms.remove(player);
+                outlawTeleportConfirms.remove(player);
             }, 30 * 20L);
         }
     }
