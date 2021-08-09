@@ -2,6 +2,7 @@ package net.mcatlas.towny.helpers;
 
 import com.palmergames.bukkit.towny.event.TownBlockSettingsChangedEvent;
 import com.palmergames.bukkit.towny.event.TownSpawnEvent;
+import com.palmergames.bukkit.towny.event.plot.toggle.PlotTogglePvpEvent;
 import com.palmergames.bukkit.towny.event.town.toggle.TownTogglePVPEvent;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
@@ -9,6 +10,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -104,26 +107,60 @@ public class TownPVPToggleTimer implements Listener {
         }
     }
 
-    @EventHandler
-    public void onTownTogglePVP(TownTogglePVPEvent event) {
-        final Town town = event.getTown();
+    private void togglePVP(Event event) {
+        final boolean plot;
+        final Town town;
+
+        if (event instanceof PlotTogglePvpEvent) {
+            plot = true;
+            town = ((PlotTogglePvpEvent) event).getTown();
+        } else if (event instanceof TownTogglePVPEvent) {
+            plot = false;
+            town = ((TownTogglePVPEvent) event).getTown();
+        } else {
+            return;
+        }
 
         // Town recently toggled pvp
         if (recentToggles.containsKey(town)) {
-            event.setCancelled(true);
-            event.setCancellationMsg("Wait to use this again.");
+            ((Cancellable) event).setCancelled(true);
+
+            String msg = "Wait to use this again.";
+
+            // yes we literally have to do this, towny has no common event class with these methods,
+            // they're just redefined in a bunch of placed
+            if (event instanceof PlotTogglePvpEvent) {
+                ((PlotTogglePvpEvent) event).setCancellationMsg(msg);
+            } else {
+                ((TownTogglePVPEvent) event).setCancellationMsg(msg);
+            }
+
             return;
         }
 
         final long toggledAt = System.currentTimeMillis();
-        final boolean newPVPState = event.getFutureState();
+        final boolean newPVPState;
+
+        if (event instanceof PlotTogglePvpEvent) {
+            newPVPState = ((PlotTogglePvpEvent) event).getFutureState();
+        } else {
+            newPVPState = ((TownTogglePVPEvent) event).getFutureState();
+        }
+
         String newPVPStateString = newPVPState ? "enabled" : "disabled";
 
         recentToggles.put(town, toggledAt);
 
         // Cancel the event
-        event.setCancelled(true);
-        event.setCancellationMsg("PVP will be " + newPVPStateString + " after the countdown.");
+        ((Cancellable) event).setCancelled(true);
+
+        String msg = "PVP will be " + newPVPStateString + " after the countdown.";
+
+        if (event instanceof PlotTogglePvpEvent) {
+            ((PlotTogglePvpEvent) event).setCancellationMsg(msg);
+        } else {
+            ((TownTogglePVPEvent) event).setCancellationMsg(msg);
+        }
 
         BukkitRunnable pvpTimerRunnable = new BukkitRunnable() {
             @Override
@@ -161,7 +198,16 @@ public class TownPVPToggleTimer implements Listener {
                     TownyHelpersPlugin.get().getLogger().info(town.getName() + " has " + newPVPStateString + " PVP. Players in town [" + String.join(", ", playerNamesInTown) + "]");
                 } else {
                     for (Player player : playersInTown) {
-                        player.sendTitle(ChatColor.YELLOW + "PVP " + newPVPStateString + " in " + (PVP_TIMER_LENGTH_SECONDS - secondsSinceToggle) + "s!", "The town you are in has toggled PVP", 0, 20 * 2, 0);
+                        final String main = ChatColor.YELLOW + "PVP " + newPVPStateString + " in " + (PVP_TIMER_LENGTH_SECONDS - secondsSinceToggle) + "s!";
+                        final String sub;
+
+                        if (plot) {
+                            sub = "A plot in this town has toggle PVP (you may be in it)";
+                        } else {
+                            sub = "The town you are in has toggled PVP";
+                        }
+
+                        player.sendTitle(main, sub, 0, 20 * 2, 0);
                     }
                 }
             }
@@ -169,6 +215,16 @@ public class TownPVPToggleTimer implements Listener {
 
         // Run the pvp timer every second
         pvpTimerRunnable.runTaskTimer(TownyHelpersPlugin.get(), 0L, 20L);
+    }
+
+    @EventHandler
+    public void onTownTogglePVP(TownTogglePVPEvent event) {
+        togglePVP(event);
+    }
+
+    @EventHandler
+    public void onPlotTogglePVP(PlotTogglePvpEvent event) {
+        togglePVP(event);
     }
 
     // From https://github.com/TownyAdvanced/Towny/blob/8f7f75f2904891ed4071279132d1500d4bb459aa/src/com/palmergames/bukkit/towny/command/TownCommand.java#L1605
